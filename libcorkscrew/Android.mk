@@ -87,6 +87,9 @@ ifeq ($(HOST_OS),linux)
   LOCAL_LDLIBS += -lrt
 endif
 LOCAL_CFLAGS += -std=gnu99 -Werror
+ifneq ($(filter 4.8 4.9 4.8.% 4.9.%, $(shell $(TARGET_CC) --version)),)
+LOCAL_CFLAGS += -Wno-error=unused-parameter
+endif
 LOCAL_MODULE := libcorkscrew
 LOCAL_MODULE_TAGS := optional
 include $(BUILD_HOST_SHARED_LIBRARY)

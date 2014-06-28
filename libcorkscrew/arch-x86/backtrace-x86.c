@@ -36,46 +36,7 @@
 #include <sys/ptrace.h>
 #include <cutils/log.h>
 
-#if defined(__BIONIC__)
-
-#if defined(__BIONIC_HAVE_UCONTEXT_T)
-
-// Bionic offers the Linux kernel headers.
-#include <asm/sigcontext.h>
-#include <asm/ucontext.h>
-typedef struct ucontext ucontext_t;
-
-#else /* __BIONIC_HAVE_UCONTEXT_T */
-
-/* Old versions of the Android <signal.h> didn't define ucontext_t. */
-
-typedef struct {
-  uint32_t  gregs[32];
-  void*     fpregs;
-  uint32_t  oldmask;
-  uint32_t  cr2;
-} mcontext_t;
-
-enum {
-  REG_GS = 0, REG_FS, REG_ES, REG_DS,
-  REG_EDI, REG_ESI, REG_EBP, REG_ESP,
-  REG_EBX, REG_EDX, REG_ECX, REG_EAX,
-  REG_TRAPNO, REG_ERR, REG_EIP, REG_CS,
-  REG_EFL, REG_UESP, REG_SS
-};
-
-/* Machine context at the time a signal was raised. */
-typedef struct ucontext {
-    uint32_t uc_flags;
-    struct ucontext* uc_link;
-    stack_t uc_stack;
-    mcontext_t uc_mcontext;
-    uint32_t uc_sigmask;
-} ucontext_t;
-
-#endif /* __BIONIC_HAVE_UCONTEXT_T */
-
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
 
 #define _XOPEN_SOURCE
 #include <ucontext.h>
@@ -828,10 +789,6 @@ ssize_t unwind_backtrace_signal_arch(siginfo_t* siginfo __attribute__((unused)),
     state.reg[DWARF_EBP] = uc->uc_mcontext->__ss.__ebp;
     state.reg[DWARF_ESP] = uc->uc_mcontext->__ss.__esp;
     state.reg[DWARF_EIP] = uc->uc_mcontext->__ss.__eip;
-#else
-    state.reg[DWARF_EBP] = uc->uc_mcontext.gregs[REG_EBP];
-    state.reg[DWARF_ESP] = uc->uc_mcontext.gregs[REG_ESP];
-    state.reg[DWARF_EIP] = uc->uc_mcontext.gregs[REG_EIP];
 #endif
 
     memory_t memory;
@@ -851,9 +808,6 @@ ssize_t unwind_backtrace_ptrace_arch(pid_t tid, const ptrace_context_t* context,
     }
 
     unwind_state_t state;
-    state.reg[DWARF_EBP] = regs.ebp;
-    state.reg[DWARF_EIP] = regs.eip;
-    state.reg[DWARF_ESP] = regs.esp;
 
     memory_t memory;
     init_memory_ptrace(&memory, tid);
